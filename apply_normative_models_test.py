@@ -8,14 +8,14 @@ The Dockerfile sets up the required dependencies and necessary data files and di
 Written by Saige Rutherford on 18-02-2022.
 '''
 
-import os, sys
-print(os.getcwd())
-import numpy as np
-import pandas as pd
-from pcntoolkit.normative import predict
-from pcntoolkit.util.utils import create_design_matrix
 
-def main(root_dir=os.getcwd()):
+
+def apply_normative_model(root_dir="/home/preclineu/piebar/Documents/PCN_directory"):
+    import os, sys
+    import numpy as np
+    import pandas as pd
+    from pcntoolkit.normative import predict
+    from pcntoolkit.util.utils import create_design_matrix
    # print(sys.path)
     #print(os.getcwd())
     site_names = 'site_ids_82sites.txt'
@@ -120,6 +120,6 @@ def main(root_dir=os.getcwd()):
                                         adaptcovfile = cov_file_ad,
                                         adaptvargroupfile = sitenum_file_ad,
                                         testvargroupfile = sitenum_file_te)
+    return "normative model prediction complete"
 
 
-main(root_dir="/home/preclineu/piebar/Documents/PCN_directory")

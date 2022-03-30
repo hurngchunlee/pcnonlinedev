@@ -3,8 +3,8 @@ import pandas as pd
 import flask
 import os, sys
 sys.path.insert(1, "/home/preclineu/piebar/Documents/PCN_directory/")
-import apply_normative_models
-#%%
+from apply_normative_models_test import apply_normative_model
+
 server = flask.Flask(__name__)
 app = Dash(__name__,  server=server)
 app.layout = html.Div([
@@ -73,7 +73,7 @@ app.layout = html.Div([
         
         # Download is a placeholder for send-to-server.
         dcc.Download(id="download-dataframe-csv"),
-        dcc.Download(id="download-dataframe-csv2"),
+        # dcc.Download(id="download-dataframe-csv2"),
 #        import subprocess
 #        
 #        ssh = subprocess.Popen(["ssh", "-i .ssh/id_rsa", "user@host"],
@@ -158,31 +158,32 @@ app.layout = html.Div([
 #df = pd.DataFrame({"a": [1, 2, 3, 4], "b": [2, 1, 5, 6], "c": ["x", "x", "y", "y"]})
         # 2 functions, where one puts uploda to download data, and one sends click to download
 @app.callback(
-    Output("download-dataframe-csv", "data"),
-    State("Upl_1", "contents"),
-    State("Upl_1", "filename"),
+    Output("submitted", "children"),
+    # State("Upl_1", "contents"),
+    # State("Upl_1", "filename"),
     Input("btn_csv", "n_clicks"),
     prevent_initial_call=True,
 )
-def submit_data(data_contents, data_filename, n_clicks):
-    return dict(content=data_contents, filename= data_filename) #dcc.send_data_frame for .csvs
+def submit_data(n_clicks):#data_contents, data_filename, 
+    finish_statement = apply_normative_model()
+    return finish_statement#dict(content = data_contents, filename = data_filename) #dcc.send_data_frame for .csvs
 
-@app.callback(
-    Output("download-dataframe-csv2", "data"),
-    State("Upl_2", "contents"),
-    State("Upl_2", "filename"),
-    Input("btn_csv", "n_clicks"),
-    prevent_initial_call=True,
-)
+# @app.callback(
+#     Output("download-dataframe-csv2", "data"),
+#     State("Upl_2", "contents"),
+#     State("Upl_2", "filename"),
+#     Input("btn_csv", "n_clicks"),
+#     prevent_initial_call=True,
+# )
 
 def submit_covs(covs_contents, covs_filename, n_clicks):
     return dict(content=covs_contents, filename=covs_filename)
 
-@app.callback(
-    Output("submitted", "children"),
-    Input("btn_csv", "n_clicks"),
-    prevent_initial_call=True,
-)
+# @app.callback(
+#     Output("submitted", "children"),
+#     Input("btn_csv", "n_clicks"),
+#     prevent_initial_call=True,
+# )
 def submitted(clicked):
     return html.Plaintext("Submitted!")
 
