@@ -2,6 +2,7 @@ from dash import Dash, html, dcc, Input, Output, State, dash_table
 import pandas as pd
 import flask
 import os, sys
+import io, base64
 sys.path.insert(1, "/home/preclineu/piebar/Documents/PCN_directory/")
 from apply_normative_models_test import apply_normative_model
 
@@ -154,20 +155,38 @@ app.layout = html.Div([
     
 ], style={'display': 'flex', 'flex-direction': 'row', 'height': '80%', 'width': '60%', 'position': 'relative', 'top':'40%', 'left':'20%' })
 
-
 #df = pd.DataFrame({"a": [1, 2, 3, 4], "b": [2, 1, 5, 6], "c": ["x", "x", "y", "y"]})
         # 2 functions, where one puts uploda to download data, and one sends click to download
 @app.callback(
     Output("submitted", "children"),
-    # State("Upl_1", "contents"),
-    # State("Upl_1", "filename"),
-    Input("btn_csv", "n_clicks"),
-    prevent_initial_call=True,
+    State("Upl_1", "contents"),
+    State("Upl_1", "filename"),
+    State('Upl_1', 'last_modified'),
+    Input("btn_csv", "n_clicks")
 )
-def submit_data(n_clicks):#data_contents, data_filename, 
-    finish_statement = apply_normative_model()
-    return finish_statement#dict(content = data_contents, filename = data_filename) #dcc.send_data_frame for .csvs
+def update_output(contents, name, date, clicks):
+    if contents is not None:
+        app_test_data = parse_contents(contents, name, date)
+        finish_message = apply_normative_model(app_test_data)
+        return finish_message
+def parse_contents(contents, filename, date):
+    content_type, content_string = contents.split(',')
 
+    decoded = base64.b64decode(content_string)
+    try:
+        if 'csv' in filename:
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8')))
+        elif 'xls' in filename:
+            # Assume that the user uploaded an excel file
+            df = pd.read_excel(io.BytesIO(decoded))
+    except Exception as e:
+        print(e)
+        return html.Div([
+            'There was an error processing this file.'
+        ])
+    return df
 # @app.callback(
 #     Output("download-dataframe-csv2", "data"),
 #     State("Upl_2", "contents"),
