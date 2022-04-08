@@ -1,16 +1,33 @@
+# Created by: Pieter Barkema
+# Date: February, 2022
+# Description:
+#    Users can access this online app to process their neuroimaging date
+#    with normative modelling. It should return visualizations 
+#    and results to users accessing from all over the world, 
+#    It is hosted as a website from a remote gunicorn server.
+    
+
 from dash import Dash, html, dcc, Input, Output, State, dash_table
 import pandas as pd
 import flask
 import os, sys
 import io, base64
-sys.path.insert(1, "/home/preclineu/piebar/Documents/PCN_directory/")
+# Make sure that this is necessary
+#sys.path.insert(1, "/home/preclineu/piebar/Documents/PCN_directory/")
 from apply_normative_models_test import apply_normative_model
-
+# Create a flask server
 server = flask.Flask(__name__)
+# Create  Dash app
 app = Dash(__name__,  server=server)
+
+
+# -----------------------------------------------------------------
+# The entire contents of the app.
 app.layout = html.Div([
     html.Div(children=[
-            
+    
+        # -----------------------------------------------------------------
+        # The standard data input parameters
         html.Br(),
         html.Label('Email address for results: '),
         dcc.Input(value='', type='text'),
@@ -23,10 +40,9 @@ app.layout = html.Div([
         html.Label('Select data format'),
         dcc.Dropdown(['.csv', 'NIFTI', '[other formats]'], '.csv'),
 
-#        dcc.Upload(html.Button('Upload File')),
         html.Br(),
         html.Hr(),
-        html.Label('Upload Data File'),
+        html.Label('Upload test data'),
         html.Hr(),
         dcc.Upload([
             'Drag and Drop or ',
@@ -42,11 +58,11 @@ app.layout = html.Div([
         }
         , id= 'Upl_1'
         ),             
-       
+        # List the uploaded data file(s)
         html.Ul(id="list-data-file"),
         
         html.Hr(),
-        dcc.Upload(html.A('Upload Covariates')),
+        dcc.Upload(html.A('Upload adaptation data')),
         html.Hr(),
         dcc.Upload([
             'Drag and Drop or ',
@@ -62,37 +78,26 @@ app.layout = html.Div([
         }
         , id= 'Upl_2'
         ),
+        # List the uploaded covariate file(s)
         html.Ul(id="list-cov-file"),         
-        
+        # -----------------------------------------------------------------
+        # The data submission and results retrieval section
         html.Div(
             style={'width':'10%', 'height':'100%','float':'right','position':'relative', 'top':'4%'},
             children=[
                 html.Button("Submit", id="btn_csv"),
                 html.Plaintext(id="submitted"),
+                html.Br(),
+                # Download your predictions in .csv format!
+                html.Button("Download", id="results_onclick", disabled=True),
+                # Store the results files so they can be downloaded on click, not instantly
+                dcc.Store(id="csv_store_session", storage_type="session"),
+                dcc.Download(id="download-dataframe-csv")
             ]
         ),
-        
-        # Download is a placeholder for send-to-server.
-        dcc.Download(id="download-dataframe-csv"),
-        # dcc.Download(id="download-dataframe-csv2"),
-#        import subprocess
-#        
-#        ssh = subprocess.Popen(["ssh", "-i .ssh/id_rsa", "user@host"],
-#                                stdin =subprocess.PIPE,
-#                                stdout=subprocess.PIPE,
-#                                stderr=subprocess.PIPE,
-#                                universal_newlines=True,
-#                                bufsize=0)
-#         
-#        # Send ssh commands to stdin
-#        ssh.stdin.write("uname -a\n")
-#        ssh.stdin.write("uptime\n")
-#        ssh.stdin.close()
-#        
-#        # Fetch output
-#        for line in ssh.stdout:
-#            print(line.strip())
 
+        # -----------------------------------------------------------------
+        # Check lists with all options to control results output
         html.Div(
             style={'width':'10%', 'height':'100%','float':'right'},
             children=[
@@ -138,37 +143,47 @@ app.layout = html.Div([
                             ),
         ]
         ),
-        
-        html.Div(id='output-data-upload')
-        #html.Br(),
-        #html.Label('Radio Items'),
-        #dcc.RadioItems(['New York City', 'Montréal', 'San Francisco'], 'Montréal'),
+
     ], style={'padding': 10, 'flex': 1}),
 
-
-#    html.Div(children=[
-#        
-#        
-#        #dcc.Store(id='local_store', storage_type='local')
-#    
-#    ], style={'padding':20, 'flex': 1, 'position': 'relative', 'top':'200px', 'left':'200px'})
-    
 ], style={'display': 'flex', 'flex-direction': 'row', 'height': '80%', 'width': '60%', 'position': 'relative', 'top':'40%', 'left':'20%' })
+# -----------------------------------------------------------------
+# Functions that handle input and output for the Dash components.
 
-#df = pd.DataFrame({"a": [1, 2, 3, 4], "b": [2, 1, 5, 6], "c": ["x", "x", "y", "y"]})
-        # 2 functions, where one puts uploda to download data, and one sends click to download
+
+# Load data into the model and store the .csv results on the website.
 @app.callback(
+    Output("csv_store_session", "data"),
     Output("submitted", "children"),
+    Output("results_onclick", "disabled"),
     State("Upl_1", "contents"),
     State("Upl_1", "filename"),
     State('Upl_1', 'last_modified'),
-    Input("btn_csv", "n_clicks")
+    State("Upl_2", "contents"),
+    State("Upl_2", "filename"),
+    State('Upl_2', 'last_modified'),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True
 )
-def update_output(contents, name, date, clicks):
-    if contents is not None:
-        app_test_data = parse_contents(contents, name, date)
-        finish_message = apply_normative_model(app_test_data)
-        return finish_message
+def update_output(contents_test, name_test, date_test, 
+                  contents_adapt, name_adapt, date_adapt, clicks):
+    if contents_test is not None and contents_adapt is not None:
+        # Convert input data to pandas
+        app_test_data = parse_contents(contents_test, name_test, date_test)
+        app_adapt_data = parse_contents(contents_adapt, name_adapt, date_adapt)
+        # Compute scores with norm modelling, and output some scores
+        z_score_df = pd.DataFrame(apply_normative_model(app_test_data, app_adapt_data))
+        
+        # Return downloadable results
+        filename = "z-scores.csv"
+        # Convert results dataframe back to .csv
+        z_score_csv = dcc.send_data_frame(z_score_df.to_csv, filename)
+        finished_message = "Normative modelling is complete!"
+        # Modulate download button's disabled property
+        disable_download = False
+        return z_score_csv, finished_message, disable_download
+
+# Convert input .csv to pandas dataframe
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
 
@@ -178,34 +193,25 @@ def parse_contents(contents, filename, date):
             # Assume that the user uploaded a CSV file
             df = pd.read_csv(
                 io.StringIO(decoded.decode('utf-8')))
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
+        # elif 'xls' in filename:
+        #     # Assume that the user uploaded an excel file
+        #     df = pd.read_excel(io.BytesIO(decoded))
     except Exception as e:
         print(e)
         return html.Div([
             'There was an error processing this file.'
         ])
     return df
-# @app.callback(
-#     Output("download-dataframe-csv2", "data"),
-#     State("Upl_2", "contents"),
-#     State("Upl_2", "filename"),
-#     Input("btn_csv", "n_clicks"),
-#     prevent_initial_call=True,
-# )
+# Download the results with a button.
+@app.callback(
+    Output("download-dataframe-csv", "data"),
+    State("csv_store_session","data"),
+    Input("results_onclick", "n_clicks")
+)
+def download_results(results_csv, clicks):
+    return results_csv
 
-def submit_covs(covs_contents, covs_filename, n_clicks):
-    return dict(content=covs_contents, filename=covs_filename)
-
-# @app.callback(
-#     Output("submitted", "children"),
-#     Input("btn_csv", "n_clicks"),
-#     prevent_initial_call=True,
-# )
-def submitted(clicked):
-    return html.Plaintext("Submitted!")
-
+# List uploaded data files (1)
 @app.callback(
     Output("list-data-file", "children"),
     Input("Upl_1", "filename"),
@@ -214,6 +220,7 @@ def submitted(clicked):
 def list_data_file(data_name):
     return html.Li(data_name) 
 
+# List uploaded data files (2)
 @app.callback(
     Output("list-cov-file", "children"),
     Input("Upl_2", "filename"),
@@ -222,13 +229,6 @@ def list_data_file(data_name):
 def list_cov_file(cov_name):
     return html.Li(cov_name) 
 
-#@app.callback(
-#    Output("download-dataframe-csv", "data"),
-#    Input("btn_csv", "n_clicks"),
-#    prevent_initial_call=True,
-#)
-#def func2(n_clicks):
-#    return dict(content=upload_data, filename="test.txt") 
-
+# Serve the app upon running the script.
 if __name__ == '__main__':
     app.run_server(debug=True)

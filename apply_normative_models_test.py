@@ -6,11 +6,10 @@ Adapted the eLife Braincharts Jupyter notebook into a python script to be run in
 The Dockerfile sets up the required dependencies and necessary data files and directory structure.
 
 Written by Saige Rutherford on 18-02-2022.
+Adjusted for testing on a website by Pieter Barkema.
 '''
 
-
-
-def apply_normative_model(app_test_data, root_dir="/home/preclineu/piebar/Documents/PCN_directory"):
+def apply_normative_model(app_test_data, app_adaptation_data, root_dir="/home/preclineu/piebar/Documents/PCN_directory"):
     import os, sys
     import numpy as np
     import pandas as pd
@@ -34,8 +33,8 @@ def apply_normative_model(app_test_data, root_dir="/home/preclineu/piebar/Docume
     # extract a list of unique site ids from the test set
     site_ids_te =  sorted(set(df_te['site'].to_list()))
 
-    adaptation_data = os.path.join(root_dir, 'docs/OpenNeuroTransfer_tr.csv')
-    df_ad = pd.read_csv(adaptation_data)
+    #adaptation_data = os.path.join(root_dir, 'docs/OpenNeuroTransfer_tr.csv')
+    df_ad = app_adaptation_data
 
     # load the list of idps for left and right hemispheres, plus subcortical regions
     with open(os.path.join(root_dir,'docs','phenotypes_lh.txt')) as f:
@@ -120,6 +119,7 @@ def apply_normative_model(app_test_data, root_dir="/home/preclineu/piebar/Docume
                                         adaptcovfile = cov_file_ad,
                                         adaptvargroupfile = sitenum_file_ad,
                                         testvargroupfile = sitenum_file_te)
-    return "normative model prediction complete"
+            
+    return Z
 
 
