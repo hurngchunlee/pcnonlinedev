@@ -18,4 +18,4 @@ RUN python3.8 -m pip install pcntoolkit==0.20
 RUN python3.8 -m pip install argparse
 COPY app.py /home/
 WORKDIR /home/
-#CMD [ "gunicorn", "--timeout=500","--workers=5", "--threads=1", "-b 0.0.0.0:80", "app:server"]
+CMD [ "gunicorn", "--timeout=500","--workers=5", "--threads=1", "-b 0.0.0.0:80", "app:server"]

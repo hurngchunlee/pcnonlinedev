@@ -33,9 +33,14 @@ app.layout = html.Div([
         dcc.Input(value='', type='text'),
     
         html.Br(),
+                html.Br(),
+        html.Label('Data type'),
+        dcc.Dropdown(options = ['Brain surface area', 'Average Thickness'], id='data-type'),
+        
         html.Br(),
         html.Label('Normative Model'),
-        dcc.Dropdown(['GPR type A', 'GPR type B','BLR type A', 'BLR type B', 'HBR type A', 'HBR type B'], 'GPR type A'),
+        dcc.Dropdown( options = ['please select data type first'], value = 'please select data type first', id='model-selection'),
+
         html.Br(),
         html.Label('Select data format'),
         dcc.Dropdown(['.csv', 'NIFTI', '[other formats]'], '.csv'),
@@ -150,12 +155,28 @@ app.layout = html.Div([
 # -----------------------------------------------------------------
 # Functions that handle input and output for the Dash components.
 
+# Function to restrict model choice based on data type choice
+@app.callback(
+    Output(component_id='model-selection', component_property='options'),
+    [Input(component_id='data-type', component_property='value')],
+    prevent_initial_call=True
+)
+def update_dp(filter_value):
+    if filter_value == 'Brain surface area':
+        # here we could put a df with all available models
+        model_selection_list = ['bsa BLR', 'bsa HBR']
+    if filter_value == 'Average Thickness':
+        model_selection_list = ['at BLR', 'at HBR']
+   # df = {"model 1": "model 1", "model 2": "model 2"}
+    return model_selection_list
 
 # Load data into the model and store the .csv results on the website.
 @app.callback(
     Output("csv_store_session", "data"),
     Output("submitted", "children"),
     Output("results_onclick", "disabled"),
+    State("data-type", "value"),
+    State("model-selection", "value"),
     State("Upl_1", "contents"),
     State("Upl_1", "filename"),
     State('Upl_1', 'last_modified'),
@@ -165,14 +186,19 @@ app.layout = html.Div([
     Input("btn_csv", "n_clicks"),
     prevent_initial_call=True
 )
-def update_output(contents_test, name_test, date_test, 
+def update_output(data_type, algorithm, contents_test, name_test, date_test, 
                   contents_adapt, name_adapt, date_adapt, clicks):
     if contents_test is not None and contents_adapt is not None:
         # Convert input data to pandas
         app_test_data = parse_contents(contents_test, name_test, date_test)
         app_adapt_data = parse_contents(contents_adapt, name_adapt, date_adapt)
         # Compute scores with norm modelling, and output some scores
-        z_score_df = pd.DataFrame(apply_normative_model(app_test_data, app_adapt_data))
+        # pseudocode
+        if data_type == "Brain surface area":
+            data_subdir = "SurfArea"
+        if data_type == "Average Thickness":
+            data_subdir = "ThickAvg"
+        z_score_df = pd.DataFrame(apply_normative_model(algorithm, data_subdir, app_test_data, app_adapt_data))
         
         # Return downloadable results
         filename = "z-scores.csv"

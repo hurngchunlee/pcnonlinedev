@@ -9,7 +9,7 @@ Written by Saige Rutherford on 18-02-2022.
 Adjusted for testing on a website by Pieter Barkema.
 '''
 
-def apply_normative_model(app_test_data, app_adaptation_data, root_dir="/home/"):
+def apply_normative_model(algorithm, data_type, app_test_data, app_adaptation_data, root_dir="/home/"):
     import os, sys
     import numpy as np
     import pandas as pd
@@ -21,7 +21,7 @@ def apply_normative_model(app_test_data, app_adaptation_data, root_dir="/home/")
     model_name = 'lifespan_57K_82sites'
 
     # where the analysis takes place
-    out_dir = os.path.join(root_dir, 'models', model_name)
+    out_dir = os.path.join(root_dir, 'models', data_type, model_name)
 
     # load a set of site ids from this model. This must match the training data
     with open(os.path.join(root_dir,'docs', site_names)) as f:
