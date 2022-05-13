@@ -6,10 +6,10 @@ Adapted the eLife Braincharts Jupyter notebook into a python script to be run in
 The Dockerfile sets up the required dependencies and necessary data files and directory structure.
 
 Written by Saige Rutherford on 18-02-2022.
-Adjusted for testing on a website by Pieter Barkema.
+Adjusted for running through an online interface by Pieter Barkema.
 '''
 
-def apply_normative_model(algorithm, data_type, app_test_data, app_adaptation_data, root_dir="/home/"):
+def apply_normative_model(app_test_data, app_adaptation_data, root_dir="/home/"):
     import os, sys
     import numpy as np
     import pandas as pd
