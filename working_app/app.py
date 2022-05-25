@@ -20,12 +20,12 @@ import pandas as pd
 import subprocess
 from flask import Flask
 #import os, sys
-import io, base64
+import io, os, base64
 
 # Make sure that this is necessary
 #sys.path.insert(1, "/home/preclineu/piebar/Documents/PCN_directory/")
 from apply_normative_models_app import apply_normative_model
-from transfer_normative_models_app import transfer_normative_model
+#from transfer_normative_models_app import transfer_normative_model
 # Create a flask server
 server = Flask(__name__)
 # Create  Dash app
@@ -181,7 +181,7 @@ def update_dp(data_type):
         # here we could put a df with all available models
         model_selection_list = ['bsa BLR', 'bsa HBR']
     if data_type == 'Average Thickness':
-        model_selection_list = ['at BLR', 'at HBR']
+        model_selection_list = ['AT blr', 'at HBR']
    # df = {"model 1": "model 1", "model 2": "model 2"}
     return model_selection_list
 
@@ -203,14 +203,36 @@ def update_dp(data_type):
 )
 def update_output(data_type, model_choice, contents_test, name_test, date_test, 
                   contents_adapt, name_adapt, date_adapt, clicks):
+    # TO-DO this if could use an 'else'
     if contents_test is not None and contents_adapt is not None:
         # Convert input data to pandas
-        app_test_data = parse_contents(contents_test, name_test, date_test)
-        app_adapt_data = parse_contents(contents_adapt, name_adapt, date_adapt)
-
-        z_scores = apply_normative_model(app_test_data, app_adapt_data)
+        test_data_pd = parse_contents(contents_test, name_test, date_test)
+        adapt_data_pd = parse_contents(contents_adapt, name_adapt, date_adapt)
+        # Remote working_dir
+        
+        test_path = "/home/user/test.pkl"
+        adapt_path = "/home/user/adapt.pkl"
+        test_data_pd.to_pickle(test_path)
+        adapt_data_pd.to_pickle(adapt_path)
+        if data_type == 'Average Thickness':
+            data_type_path = "ThickAvg"
+        if model_choice == 'AT blr':
+            model_name = "BLR_lifespan_57K_82sites"
+        # execute a bash script that qsubs an apply_model to the cluster
+        # make this flags? -dt -mc -ct -nt -ca -na 
+        models_dir = "/home/preclineu/piebar/remotepcnenv/models/"
+        working_path = os.path.join(models_dir, data_type_path)#, model_path)
+        model_choice_path = os.path.join(models_dir, data_type_path, model_name)
+        scp = "scp -oStrictHostKeyChecking=no {test} {adapt} piebar@mentat004.dccn.nl:{total_path}".format(test=test_path, adapt=adapt_path, total_path=working_path)
+        subprocess.call(scp, shell=True)
+        #execute = 'cat ./execute_remote.sh {dt} {mc} {ct} {nt} {ca} {na} | ssh -oStrictHostKeyChecking=no piebar@mentat004.dccn.nl'.format(dt=data_type, mc=model_choice, ct=test_data_pd, nt=name_test, ca=adapt_data_pd, na=name_adapt)
+        execute = 'ssh -oStrictHostKeyChecking=no piebar@mentat004.dccn.nl "bash -s" < execute_remote.sh {working_path} {model_choice}'.format(working_path = working_path, model_choice=model_name) 
+        #'cat ./execute_remote.sh | ssh -oStrictHostKeyChecking=no piebar@mentat004.dccn.nl'
+        subprocess.call(execute, shell=True)
+        #z_scores = subprocess.call(execute, shell=True)
+        #z_scores = apply_normative_model(app_test_data, app_adapt_data)
         #z_scores = transfer_normative_model(data_type, model_choice, app_test_data, app_adapt_data)
-        z_score_df = pd.DataFrame(z_scores)
+        z_score_df = pd.DataFrame([{"hello":5}])#z_scores)
         
         # Return downloadable results
         filename = "z-scores.csv"
@@ -222,6 +244,7 @@ def update_output(data_type, model_choice, contents_test, name_test, date_test,
         return z_score_csv, finished_message, disable_download
 
 # Convert input .csv to pandas dataframe
+# TO-DO: scp could be here as well, we don't really need dataframe of the input data
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
 
@@ -255,6 +278,7 @@ def download_results(results_csv, clicks):
     Input("Upl_1", "filename"),
     prevent_initial_call=True,
 )
+
 def list_data_file(data_name):
     return html.Li(data_name) 
 
