@@ -11,3 +11,4 @@ setuptools
 six
 Werkzeug
 gunicorn
+dash-bootstrap-components

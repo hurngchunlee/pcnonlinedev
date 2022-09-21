@@ -16,7 +16,6 @@
         # os.chdir("")
 
 from dash import Dash, html, dcc, Input, Output, State
-import dash_bootstrap_components as dbc
 import pandas as pd
 from subprocess import PIPE, Popen, run, call, check_output
 from flask import Flask
@@ -30,7 +29,7 @@ import io, os, base64
 # Create a flask server
 server = Flask(__name__)
 # Create  Dash app
-app = Dash(server=server, external_stylesheets=[dbc.themes.MATERIA])
+app = Dash(server=server)
 
 def retrieve_options(data_type=None):
     import ast
@@ -38,7 +37,7 @@ def retrieve_options(data_type=None):
     chosen_dir = "models"
     if data_type is not None:
         chosen_dir = os.path.join("models", data_type)
-    list_dirs = ["python", "/project_cephfs/3022051.01/list_subdirs.py", "{chosen_dir}".format(chosen_dir=chosen_dir)]
+    list_dirs = ["ssh", "-o", "StrictHostKeyChecking=no", "piebar@mentat004.dccn.nl", "python", "/project_cephfs/3022051.01/list_subdirs.py", "{chosen_dir}".format(chosen_dir=chosen_dir)]
     
     p = Popen(list_dirs, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     output, err = p.communicate()
@@ -55,17 +54,16 @@ def retrieve_options(data_type=None):
 # -----------------------------------------------------------------
 # The entire contents of the app.
 app.layout = html.Div([
-    dbc.Col(
+    
     html.Div(children=[
     
         # -----------------------------------------------------------------
         html.Br(),
         html.Label('Email address for results: '),
-        html.Br(),
-        dcc.Input(value='', type='text', id='email_address'),
+        dcc.Input(value='pieter.barkema@donders.ru.nl', type='text', id='email_address'),
     
         html.Br(),
-        html.Br(),
+                html.Br(),
         html.Label('Data type'),
         dcc.Dropdown(options = retrieve_options(), id='data-type'),
         
@@ -75,7 +73,7 @@ app.layout = html.Div([
 
         html.Br(),
         html.Label('Select data format'),
-        dcc.Dropdown(['.csv'], '.csv'), #['.csv', 'NIFTI', '[other formats]']
+        dcc.Dropdown(['.csv', 'NIFTI', '[other formats]'], '.csv'),
 
         html.Br(),
         html.Hr(),
@@ -85,6 +83,7 @@ app.layout = html.Div([
             'Drag and Drop or ',
             html.A('Select a File')
         ], style={
+            'width': '100%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -104,6 +103,7 @@ app.layout = html.Div([
             'Drag and Drop or ',
             html.A('Select a File')
         ], style={
+            'width': '100%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -118,61 +118,68 @@ app.layout = html.Div([
         # -----------------------------------------------------------------
         # The data submission and results retrieval section
         html.Div(
+            #style={'width':'10%','float':'right','position':'relative', 'top':'4%'},
             children=[
-               
-                # -----------------------------------------------------------------
-                # Check lists with all options to control results output
-                dcc.Checklist(className ='checkbox_1',
-                            style={'margin-right': '15px'},
-                            options=[
-                                {'label': 'raw data', 'value': 'I1ST2', 'disabled': 'True'},
-                                {'label': 'raw data', 'value': 'I2ST2', 'disabled': 'True'},
-                                {'label': 'raw data', 'value': 'I3ST2', 'disabled': 'True'},
-                                {'label': 'raw data', 'value': 'I4ST2', 'disabled': 'True'}
-                                    ],
-                            value=['I1ST2'],
-                            labelStyle = {'display': 'block'}
-                                    ),
-                dcc.Checklist(className ='checkbox_1',
-                              style={'margin-right': '15px'},
-                            options=[
-                                {'label': 'visualization', 'value': 'I1MT', 'disabled': 'True'},
-                                {'label': 'visualization', 'value': 'I2MT', 'disabled': 'True'},
-                                {'label': 'visualization', 'value': 'I3MT', 'disabled': 'True'},
-                                {'label': 'visualization', 'value': 'I4MT', 'disabled': 'True'}
-                                ],
-                            value=[],
-                            labelStyle = {'display': 'block'}
-                                    ),
-                dcc.Checklist(className ='checkbox_1',
-                              style={'margin-right': '15px'},
-                        options=[
-                            {'label': 'z-score brain space', 'value': 'I1ST1', 'disabled': 'True'},
-                            {'label': 'Centile plots', 'value': 'I2ST1', 'disabled': 'True'},
-                            {'label': 'Exp. Var. plots', 'value': 'I3ST1', 'disabled': 'True'},
-                            {'label': '[other error measures]', 'value': 'I4ST1', 'disabled': 'True'}
-                                ],
-                        value=['I1ST1'],
-                        labelStyle = {'display': 'block'}
-                                ),
-                html.Div(
-                    style={'float':'right'},
-                    children=[
-                        html.Button("Submit", id="btn_csv"),
-                        html.Plaintext(id="submitted"),
+                html.Button("Submit", id="btn_csv"),
+                html.Plaintext(id="submitted"),
+                html.Br(),
+                # Download your predictions in .csv format!
+                html.Button("Download", id="results_onclick", disabled=True),
+                # Store the results files so they can be downloaded on click, not instantly
+                dcc.Store(id="csv_store_session", storage_type="session"),
+                dcc.Download(id="download-dataframe-csv")
+            ]
+        ),
 
-                        # To-do: make it downloadable onclick. this works together with disable_download also commented out.
-                        # Download your predictions in .csv format!
-                        #html.Button("Download", id="results_onclick", disabled=True),
-                        # Store the results files so they can be downloaded on click, not instantly
-                        #dcc.Store(id="csv_store_session", storage_type="session"),
-                        #dcc.Download(id="download-dataframe-csv")
-                    ]
-                )
-                ]
-            , style={'float': 'right', 'display':'flex'}
-            )
-    ], style={'padding': 10, 'flex': 1})),
+        # -----------------------------------------------------------------
+        # Check lists with all options to control results output
+        html.Div(
+            #style={'float':'left'},
+            children=[
+                dcc.Checklist(className ='checkbox_1',
+                        options=[
+                            {'label': 'raw data', 'value': 'I1ST2'},
+                            {'label': 'raw data', 'value': 'I2ST2'},
+                            {'label': 'raw data', 'value': 'I3ST2'},
+                            {'label': 'raw data', 'value': 'I4ST2'}
+                                ],
+                        value=['I1ST2'],
+                        labelStyle = {'display': 'block'}
+                                )
+            ]
+        ),
+        html.Div(
+            #style={'float':'left'},
+            children=[
+                dcc.Checklist(className ='checkbox_1',
+                        options=[
+                            {'label': 'visualization', 'value': 'I1MT'},
+                            {'label': 'visualization', 'value': 'I2MT'},
+                            {'label': 'visualization', 'value': 'I3MT'},
+                            {'label': 'visualization', 'value': 'I4MT'}
+                            ],
+                        value=['I1MT'],
+                        labelStyle = {'display': 'block'}
+                                )
+            ]
+        ),
+        html.Div(
+        #style={'float':'left'},
+        children=[
+            dcc.Checklist(className ='checkbox_1',
+                    options=[
+                        {'label': 'z-score brain space', 'value': 'I1ST1'},
+                        {'label': 'Centile plots', 'value': 'I2ST1'},
+                        {'label': 'Exp. Var. plots', 'value': 'I3ST1'},
+                        {'label': '[other error measures]', 'value': 'I4ST1'}
+                            ],
+                    value=['I1ST1'],
+                    labelStyle = {'display': 'block'}
+                            ),
+        ]
+        ),
+
+    ], style={'padding': 10, 'flex': 1}),
 
 ], style={'display': 'flex', 'flex-direction': 'row', 'height': '80%', 'width': '60%', 'position': 'relative', 'top':'40%', 'left':'20%' })
 # -----------------------------------------------------------------
@@ -202,7 +209,7 @@ def update_dp(data_type):
 @app.callback(
     Output("csv_store_session", "data"),
     Output("submitted", "children"),
-    #Output("results_onclick", "disabled"),
+    Output("results_onclick", "disabled"),
     State("email_address", "value"),
     State("data-type", "value"),
     State("model-selection", "value"),
@@ -243,8 +250,7 @@ def update_output(email_address, data_type_dir, model_name, contents_test, name_
         # create session dir and transfer data there
         
         #removed /idp_results from {session_dir}
-        # how to do scp locally? just move files right?
-        scp = """mkdir -p {session_dir} && 
+        scp = """ssh -oStrictHostKeyChecking=no piebar@mentat004.dccn.nl mkdir -p {session_dir} && 
         scp -oStrictHostKeyChecking=no {test} {adapt} piebar@mentat004.dccn.nl:{session_dir}""".format(session_dir = session_dir, test=test_path, adapt=adapt_path)
         subprocess.call(scp, shell=True)
         algorithm = model_name.split("_")[0]
@@ -258,13 +264,13 @@ def update_output(email_address, data_type_dir, model_name, contents_test, name_
         z_score_df = pd.DataFrame([{"hello world":5}])#z_scores)
         
         # Return downloadable results
-        # filename = "z-scores.csv"
-        # # Convert results dataframe back to .csv
-        # z_score_csv = dcc.send_data_frame(z_score_df.to_csv, filename)
+        filename = "z-scores.csv"
+        # Convert results dataframe back to .csv
+        z_score_csv = dcc.send_data_frame(z_score_df.to_csv, filename)
         finished_message = "Your computation request has been sent!"
         # Now disabled because downloading is pointless when we email results
-        #disable_download = True
-        return z_score_csv, finished_message#, disable_download
+        disable_download = True
+        return z_score_csv, finished_message, disable_download
 
 # Convert input .csv to pandas dataframe
 # TO-DO: scp could be here as well, we don't really need dataframe of the input data

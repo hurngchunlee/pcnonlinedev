@@ -38,7 +38,7 @@ def retrieve_options(data_type=None):
     chosen_dir = "models"
     if data_type is not None:
         chosen_dir = os.path.join("models", data_type)
-    list_dirs = ["python", "/project_cephfs/3022051.01/list_subdirs.py", "{chosen_dir}".format(chosen_dir=chosen_dir)]
+    list_dirs = ["ssh", "-o", "StrictHostKeyChecking=no", "piebar@mentat004.dccn.nl", "python", "/project_cephfs/3022051.01/list_subdirs.py", "{chosen_dir}".format(chosen_dir=chosen_dir)]
     
     p = Popen(list_dirs, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     output, err = p.communicate()
@@ -243,8 +243,7 @@ def update_output(email_address, data_type_dir, model_name, contents_test, name_
         # create session dir and transfer data there
         
         #removed /idp_results from {session_dir}
-        # how to do scp locally? just move files right?
-        scp = """mkdir -p {session_dir} && 
+        scp = """ssh -oStrictHostKeyChecking=no piebar@mentat004.dccn.nl mkdir -p {session_dir} && 
         scp -oStrictHostKeyChecking=no {test} {adapt} piebar@mentat004.dccn.nl:{session_dir}""".format(session_dir = session_dir, test=test_path, adapt=adapt_path)
         subprocess.call(scp, shell=True)
         algorithm = model_name.split("_")[0]

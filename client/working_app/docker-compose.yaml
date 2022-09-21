@@ -4,16 +4,5 @@
    dashboard:
      build: 
        context: ./
-     container_name: dash-app_dashboard      
-     hostname: dash-app_dashboard
-     #restart: always
-     #volumes:
-     # - C:\Users\piebar\.ssh:/home/user/.ssh:ro
-     ports:
-       - 5000:80
-     networks:
-       - network 
-    
- networks:
-   network:
-     driver: bridge
+     container_name: PCNonline_dash
+     hostname: PCNonline_dash
