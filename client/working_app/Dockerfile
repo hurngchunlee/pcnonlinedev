@@ -8,7 +8,7 @@ COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 RUN python3.8 -m pip install argparse
 COPY app.py /home/
-COPY execute_remote.sh /home/
+COPY execute_modelling.sh /home/
 WORKDIR /home/
 
 # Enable .ssh connection. Can all of this be removed for DCCN?
