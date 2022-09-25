@@ -1,7 +1,8 @@
  version: '3.7'
  services:
+ 
    dashboard:
      build: 
        context: ./
-     container_name: PCNonline_dash
-     hostname: PCNonline_dash
+     container_name: PCNonline_dash2
+     hostname: PCNonline_dash2
