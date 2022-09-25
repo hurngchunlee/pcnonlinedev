@@ -1,0 +1,14 @@
+wheel
+setuptools
+Flask
+dash
+numpy==1.20.3
+pandas
+python-dateutil
+pytz
+retrying
+setuptools
+six
+Werkzeug
+gunicorn
+dash-bootstrap-components
